@@ -1,7 +1,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-// Added by GUY
 #include "sp_image_proc_util.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -15,7 +14,6 @@ extern "C"{
 	//HINT : You don't need to include other C header files here -> Maybe in sp_image_proc_util.c ? <-
         //
         // Commented out by GUY - SPPoint.h is already included in sp_image_proc_util.h
-	/* #include "SPPoint.h" */
 	#include "SPBPriorityQueue.h"
 }
 
@@ -180,7 +178,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 
 	for(int i = 0; i < numberOfImages; i++) /*Go over each image*/
             // GUY - [i] is a mistake?
-		for(int j = 0; j < *nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
+		for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
 		{
 			/*Calculate the L2 distance between the feature and queryFeature*/
 			double distance = spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature);

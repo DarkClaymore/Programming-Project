@@ -1,7 +1,6 @@
-#include <stddef.h>
-#include <stdlib.h>
-
 #include "sp_image_proc_util.h"
+#include <cstddef>
+#include <cstdlib>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -10,15 +9,11 @@
 using namespace cv;
 
 extern "C"{
-	//Use this syntax in-order to include C-header files
-	//HINT : You don't need to include other C header files here -> Maybe in sp_image_proc_util.c ? <-
-        //
-        // Commented out by GUY - SPPoint.h is already included in sp_image_proc_util.h
 	#include "SPBPriorityQueue.h"
 }
 
 /*The number of channels that are expected on input (R,G,B)*/
-const int NUM_OF_CHANNELS = 3; 
+const int NUM_OF_CHANNELS = 3;
 
 /* Descriptor dimension */
 const int SIFT_DESCRIPTOR_DIM = 128; 

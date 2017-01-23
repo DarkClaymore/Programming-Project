@@ -2,7 +2,6 @@
 #include "sp_image_proc_util.h"
 #include <cstdlib>
 #include <cstddef>
-#include <cstring>
 #include <cstdio>
 
 
@@ -71,30 +70,146 @@ void DestroyImageDataBase(ImageDatabase* database)
 }
 
 
-PROGRAM_STATE CalcImageDataBaseRGBHists(ImageDatabase* database)
+PROGRAM_STATE CalcImageDataBaseHistsAndDescriptors(ImageDatabase* database)
 {
 	/*Create an array of hists*/
 	database->RGBHists = (SPPoint***)malloc(sizeof(SPPoint**) * database->nImages);
+	database->SIFTDescriptors = (SPPoint***)malloc(sizeof(SPPoint**) * database->nImages);
+	database->nFeatures = (int*)malloc(sizeof(int) * database->nImages);
 
-	if (database->RGBHists == NULL)
+	if (database->RGBHists == NULL ||
+		database->SIFTDescriptors == NULL ||
+		database->nFeatures == NULL)
 		return PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
 
-	/*Go over each image and calculate the RGB hist*/
+	/*Go over each image and calculate the RGB hist and SIFT descriptors*/
 	for(int i=0; i < database->nImages; i++)
 	{
 		/*Get the full path of the image*/
 		char* imgPath = GetImagePath(database->imgDirectory, database->imgPrefix, database->imgSuffix, i);
-
 		if (imgPath == NULL)
 			return PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
 
+		/*Calculate RGB hists*/
 		database->RGBHists[i] = spGetRGBHist(imgPath,i, database->nBins);
+		/*Calculate SIFT descriptors*/
+		database->SIFTDescriptors[i] = spGetSiftDescriptors(imgPath,i, database->nFeaturesToExtract, &(database->nFeatures[i]));
+
 		free(imgPath);
+
+		/*If reached this point in the program, then assume that nBins > 0, maxNFeatures > 0 and image path is valid*/
+		/*Therefore, if spGetRGBHist() or SIFTDescriptors() returns null, then it was a memory allocation error*/
+		if (database->RGBHists[i] == NULL || database->SIFTDescriptors[i] == NULL)
+			return PROGRAM_STATE_MEMORY_ERROR;
 	}
 
 	/*All data was calculated successfully. Keep running the main program*/
 	return PROGRAM_STATE_RUNNING;
 }
+
+
+PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database)
+{
+	/*The result of the program's state after this procedure*/
+	PROGRAM_STATE resProgramState = PROGRAM_STATE_RUNNING;
+
+	SPPoint** queryRGBHists; /*Query image RGB hists*/
+	SPPoint** querySIFTDescriptors; /*Query image descriptors*/
+	int* queryNFeatures = (int*)malloc(sizeof(int) * 1); /*Num of retrieved features from  query image*/
+
+	/*Allocate memory for the image path for user input*/
+	char* queryImagePath = (char*)malloc(sizeof(char) * MAX_IMG_PATH_LEGTH);
+
+	if (queryNFeatures == NULL ||
+		queryImagePath == NULL)
+		resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
+
+	if (resProgramState == PROGRAM_STATE_RUNNING) /*If should keep running or skip to end*/
+	{
+		/*Ask user to input terminating symbol "#" or the path to a query image*/
+		printf(ENTER_QUERY_OR_TERMINATE_MSG);
+		scanf("%s", queryImagePath);
+
+		if (strcmp(queryImagePath, &TERMINATING_SYMBOL) == 0)
+			resProgramState = PROGRAM_STATE_EXIT; /*The user requested to terminate the program*/
+	}
+
+	if (resProgramState == PROGRAM_STATE_RUNNING) /*If should keep running or skip to end*/
+	{
+		queryRGBHists = spGetRGBHist(queryImagePath, QUERY_IMAGE_INDEX, database->nBins);
+		querySIFTDescriptors = spGetSiftDescriptors(queryImagePath, QUERY_IMAGE_INDEX, database->nFeaturesToExtract, queryNFeatures);
+
+		if (queryRGBHists == NULL ||
+			querySIFTDescriptors == NULL)
+			resProgramState = PROGRAM_STATE_MEMORY_ERROR;
+	}
+
+	if (resProgramState == PROGRAM_STATE_RUNNING) /*If should keep running or skip to end*/
+		/*Calculate and print the indices of closest images based on RGB hists*/
+		resProgramState = CalcClosestDatabaseImagesByRGBHists(queryRGBHists, database);
+
+	/* TODO SIFT calculation and printing*/
+
+	/*Free all memory associated with the query image*/
+	free(queryImagePath);
+	free(queryRGBHists);
+	free(querySIFTDescriptors);
+
+	return resProgramState;
+}
+
+
+PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const ImageDatabase* database)
+{
+	/*The result of the program's state after this procedure*/
+	PROGRAM_STATE resProgramState = PROGRAM_STATE_RUNNING;
+
+	/*Use a priority queue to collect the closest images based on L2 distacnes.
+	 * The queue doesn't need to be any larger than the number of images to print.*/
+	SPBPQueue* imagesPriortiyQueue = spBPQueueCreate(NUM_OF_CLOSEST_IMAGES_TO_PRINT);
+
+	if (imagesPriortiyQueue == NULL)
+		resProgramState = PROGRAM_STATE_MEMORY_ERROR;
+
+	if (resProgramState == PROGRAM_STATE_RUNNING)
+	{
+		for(int i=0; i < database->nImages; i++)
+		{
+			/*Calculate L2 distance between image i and the query image*/
+			double distance = spRGBHistL2Distance(queryRGBHists, database->RGBHists[i]);
+
+			/*Enqueue the L2 distance with the compared image's index*/
+			spBPQueueEnqueue(imagesPriortiyQueue, i, distance);
+		}
+
+		printf(NEAREST_IMAGES_GLOBAL_DESC_MSG);
+
+		int* nearestImgIndices;
+		int* numOfIndices = (int*)malloc(sizeof(int) * 1);
+
+		if (numOfIndices == NULL)
+			resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error*/
+
+		if (resProgramState == PROGRAM_STATE_RUNNING) /*Continue only if successfully allocated*/
+		{
+			/*Get the indices of the closest images to the query image*/
+			nearestImgIndices = GetBPQueueIndices(imagesPriortiyQueue, numOfIndices);
+
+			/*Print out the indices*/
+			PrintIndices(nearestImgIndices, *numOfIndices);
+		}
+
+		free(numOfIndices);
+		free(nearestImgIndices);
+	}
+
+	/*Destroy the priority queue to free memory*/
+	spBPQueueDestroy(imagesPriortiyQueue);
+
+	return PROGRAM_STATE_RUNNING;
+}
+
+
 
 char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int imgIndex)
 {
@@ -143,6 +258,49 @@ void PrintExitMessage(PROGRAM_STATE exitProgramState)
 		case PROGRAM_STATE_RUNNING:
 			break; /*Shouldn't happen. Handled to avoid compilation warnings*/
 	}
+}
+
+
+int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices)
+{
+	/*Get the size of the priority queue, in case it's lower
+	 * than max size of the queue  */
+	*numOfIndices = spBPQueueSize(source);
+
+	/*Allocate memory for the output indices*/
+	int* resIndices = (int*)malloc((*numOfIndices)*sizeof(int));
+
+	if (resIndices == NULL)
+		return NULL;
+
+	/*Helper queue elem pointer*/
+	BPQueueElement* queueElem = (BPQueueElement*)malloc(sizeof(BPQueueElement));
+
+	for(int i=0; i < *numOfIndices; i++)
+	{
+		spBPQueuePeek(source, queueElem); /*Get the first lowest value element*/
+		resIndices[i] = queueElem->index; /*Get the index of the element*/
+		spBPQueueDequeue(source); /*Remove the element from queue*/
+	}
+
+	free(queueElem);
+
+	return resIndices;
+}
+
+
+void PrintIndices(int* indices, int numOfIndices)
+{
+	/*Print all indices in a i[1], i[2], i[3]... i[n] format, where  n = numOfIndices*/
+	for(int i = 0; i < numOfIndices; i++)
+	{
+		printf("%d",indices[i]); /*Print an index*/
+
+		if (i + 1 < numOfIndices) /*If there are still more indices to print*/
+			printf(", ");
+	}
+
+	printf("\n"); /*Start new line in the end*/
 }
 
 

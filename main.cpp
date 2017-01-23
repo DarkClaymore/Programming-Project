@@ -22,10 +22,11 @@ int main()
 
 	/*Calculate RGB histograms for all images*/
 	if (programState == PROGRAM_STATE_RUNNING)
-		programState = CalcImageDataBaseRGBHists(database);
+		programState = CalcImageDataBaseHistsAndDescriptors(database);
 
-	/*TODO: stages 8~11 */
-
+	/*While the user hasn't entered the exit symbol or an error hasn't occurred, receive query image inputs*/
+	while (programState == PROGRAM_STATE_RUNNING)
+		programState = CalcQueryImageClosestDatabaseResults(database);
 
 	/*Free all memory used by the image database.*/
 	DestroyImageDataBase(database);

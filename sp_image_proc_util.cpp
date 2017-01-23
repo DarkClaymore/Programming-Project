@@ -13,10 +13,10 @@ extern "C"{
 }
 
 /*The number of channels that are expected on input (R,G,B)*/
-const int NUM_OF_CHANNELS = 3;
+#define NUM_OF_CHANNELS 3
 
 /* Descriptor dimension */
-const int SIFT_DESCRIPTOR_DIM = 128; 
+#define SIFT_DESCRIPTOR_DIM 128
 
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
@@ -91,7 +91,9 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
 	return averageDistance;
 }
 
-SPPoint ** spGetSiftDescriptors(char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures) {
+
+SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures)
+{
     if (str == NULL || nFeaturesToExtract <= 0 || nFeatures == NULL) {
         return NULL;
     }

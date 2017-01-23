@@ -5,11 +5,21 @@
 
 extern "C"{
 	#include "SPPoint.h"
+	#include "SPBPriorityQueue.h"
 }
 
 
+const char TERMINATING_SYMBOL = '#';
+
 /*The assumed max length of an image path, as instructed*/
 #define MAX_IMG_PATH_LEGTH 1024
+
+/*The index that a query image will receive in SPPoint objects*/
+#define QUERY_IMAGE_INDEX 1
+
+/*The number of closest images to print for an inputed query image ,
+ * Applies for both RGB hist distance compare and to SIFT descriptors distance*/
+#define NUM_OF_CLOSEST_IMAGES_TO_PRINT 5
 
 /*Input messages*/
 #define ENTER_DIRECTORY_MSG "Enter images directory path:\n"
@@ -17,7 +27,8 @@ extern "C"{
 #define ENTER_NUM_OF_IMAGES_MSG "Enter number of images:\n"
 #define ENTER_SUFFIX_MSG "Enter images suffix:\n"
 #define ENTER_NUM_OF_BINS_MSG "Enter number of bins:\n"
-
+#define ENTER_QUERY_OR_TERMINATE_MSG "Enter a query image or # to terminate:\n"
+#define NEAREST_IMAGES_GLOBAL_DESC_MSG "Nearest images using global descriptors:\n"
 
 /*Exit messages*/
 #define MEMORY_ERROR_MSG "An error occurred - allocation failure\n"
@@ -48,6 +59,8 @@ typedef struct image_database {
 	char* imgPrefix; /*The prefix of the images*/
 	char* imgSuffix; /*The suffix of the images*/
 	SPPoint*** RGBHists; /*The RGB histograms of the images*/
+	SPPoint*** SIFTDescriptors; /*The SIFT descriptors of the images*/
+	int* nFeatures; /*The actual number of features that was extracted for each image*/
 } ImageDatabase;
 
 
@@ -68,14 +81,38 @@ typedef struct image_database {
 PROGRAM_STATE GetImageDatabaseFromUser(ImageDatabase* database);
 
 /**
- * Calculates the RGB hists for the database.
+ * Calculates the RGB hists and SIFT descriptors for the database.
  *
  * @param database - pointer to the database to fill.
  * @return
  * - PROGRAM_STATE_MEMORY_ERROR: Failed to allocate memory at some point.
  * - PROGRAM_STATE_RUNNING: No errors. Continue running the program.
  */
-PROGRAM_STATE CalcImageDataBaseRGBHists(ImageDatabase* database);
+PROGRAM_STATE CalcImageDataBaseHistsAndDescriptors(ImageDatabase* database);
+
+/**
+ * Lets user input the relative URL of a query image.
+ * Calculates the closest images in database to the query image, based
+ * on RGB hists and SIFT descriptors.
+ *
+ * @param database - the database of images.
+ * @return
+ * - PROGRAM_STATE_EXIT: User inputed an exit symbol "#" to terminate the program.
+ * - PROGRAM_STATE_MEMORY_ERROR: Failed to allocate memory at some point.
+ * - PROGRAM_STATE_RUNNING: Closest images were successfully calculated and printed.
+ * 							Keep running program for another user input.
+ */
+PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database);
+
+/***
+ * Calculates and prints the closest NUM_OF_CLOSEST_IMAGES_TO_PRINT images to the query image
+ * based on L2 distances of RGB hists.
+ *
+ * @param queryRGBHists - the RGB hists of the query image.
+ * @param database - the database of images with which the query image will be compared.
+ *
+ */
+PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const ImageDatabase* database);
 
 /**
  * Destroy the image database and free all allocated memory for it
@@ -101,6 +138,27 @@ char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int img
  * @param programState - The prgram's state on exit
  */
 void PrintExitMessage(PROGRAM_STATE exitProgramState);
+
+
+/**
+ * Dequeue all queue elements and return their indices in order (from lowest value elem to highest).
+ * Assumes that the caller will handle the destruction of the queue and freeing memory.
+ *
+ * @param source - the BP queue to get the indices of.
+ * @param numOfIndices - OUTPUT parameter. The number of indices in the result.
+ * @return
+ * - NULL if memory allocation error happened.
+ * - Otherwise, the indices of all the queue elements, in order from lowest value elem to highest value elem
+ */
+int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices);
+
+/***
+ * Prints an array of provided indices in a specific format.
+ *
+ * @param indices - the array of indices
+ * @param numOfIndices - the size of indices array
+ */
+void PrintIndices(int* indices, int numOfIndices);
 
 
 

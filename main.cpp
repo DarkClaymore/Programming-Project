@@ -1,13 +1,13 @@
-#include "sp_image_proc_util.h"
+/* #include "sp_image_proc_util.h" */
 #include "main_aux.h"
 #include <cstdlib>
-#include <cstddef>
-#include <cstdio>
+/* #include <cstddef> */
+/* #include <cstdio> */
 
-extern "C"{
-//include your own C source files
-#include "SPPoint.h"
-}
+/* extern "C"{ */
+/* //include your own C source files */
+/* #include "SPPoint.h" */
+/* } */
 
 int main()
 {

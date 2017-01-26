@@ -1,17 +1,17 @@
 #include "main_aux.h"
-#include "sp_image_proc_util.h"
 #include <cstdlib>
-#include <cstddef>
+/* #include <cstddef> */
 #include <cstdio>
+
 
 
 
 PROGRAM_STATE GetImageDatabaseFromUser(ImageDatabase* database)
 {
 	/*Allocate memory*/
-	database->imgDirectory = (char*)malloc(sizeof(char) * MAX_IMG_PATH_LEGTH);
-	database->imgPrefix = (char*)malloc(sizeof(char) * MAX_IMG_PATH_LEGTH);
-	database->imgSuffix = (char*)malloc(sizeof(char) * MAX_IMG_PATH_LEGTH);
+	database->imgDirectory = (char*)malloc(sizeof(*database->imgDirectory) * MAX_IMG_PATH_LEGTH);
+	database->imgPrefix = (char*)malloc(sizeof(*database->imgPrefix) * MAX_IMG_PATH_LEGTH);
+	database->imgSuffix = (char*)malloc(sizeof(*database->imgSuffix) * MAX_IMG_PATH_LEGTH);
 
 	/*Validate that memory was successfully allocated*/
 	if (database->imgDirectory == NULL
@@ -73,9 +73,9 @@ void DestroyImageDataBase(ImageDatabase* database)
 PROGRAM_STATE CalcImageDataBaseHistsAndDescriptors(ImageDatabase* database)
 {
 	/*Create an array of hists*/
-	database->RGBHists = (SPPoint***)malloc(sizeof(SPPoint**) * database->nImages);
-	database->SIFTDescriptors = (SPPoint***)malloc(sizeof(SPPoint**) * database->nImages);
-	database->nFeatures = (int*)malloc(sizeof(int) * database->nImages);
+	database->RGBHists = (SPPoint***)malloc(sizeof(*database->RGBHists) * database->nImages);
+	database->SIFTDescriptors = (SPPoint***)malloc(sizeof(*database->SIFTDescriptors) * database->nImages);
+	database->nFeatures = (int*)malloc(sizeof(*database->nFeatures) * database->nImages);
 
 	if (database->RGBHists == NULL ||
 		database->SIFTDescriptors == NULL ||
@@ -115,10 +115,10 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 
 	SPPoint** queryRGBHists; /*Query image RGB hists*/
 	SPPoint** querySIFTDescriptors; /*Query image descriptors*/
-	int* queryNFeatures = (int*)malloc(sizeof(int) * 1); /*Num of retrieved features from  query image*/
+	int* queryNFeatures = (int*)malloc(sizeof(*queryNFeatures) * 1); /*Num of retrieved features from  query image*/
 
 	/*Allocate memory for the image path for user input*/
-	char* queryImagePath = (char*)malloc(sizeof(char) * MAX_IMG_PATH_LEGTH);
+	char* queryImagePath = (char*)malloc(sizeof(*queryImagePath) * MAX_IMG_PATH_LEGTH);
 
 	if (queryNFeatures == NULL ||
 		queryImagePath == NULL)
@@ -185,7 +185,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 		printf(NEAREST_IMAGES_GLOBAL_DESC_MSG);
 
 		int* nearestImgIndices;
-		int* numOfIndices = (int*)malloc(sizeof(int) * 1);
+		int* numOfIndices = (int*)malloc(sizeof(*numOfIndices) * 1);
 
 		if (numOfIndices == NULL)
 			resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error*/
@@ -213,7 +213,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 
 char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int imgIndex)
 {
-	char* res = (char*)malloc(sizeof(char) * (MAX_IMG_PATH_LEGTH+1));
+	char* res = (char*)malloc(sizeof(*res) * (MAX_IMG_PATH_LEGTH+1));
 	if (res == NULL)
 		return NULL; /*Failed to allocate memory*/
 
@@ -268,13 +268,13 @@ int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices)
 	*numOfIndices = spBPQueueSize(source);
 
 	/*Allocate memory for the output indices*/
-	int* resIndices = (int*)malloc((*numOfIndices)*sizeof(int));
+	int* resIndices = (int*)malloc((*numOfIndices)*sizeof(*resIndices));
 
 	if (resIndices == NULL)
 		return NULL;
 
 	/*Helper queue elem pointer*/
-	BPQueueElement* queueElem = (BPQueueElement*)malloc(sizeof(BPQueueElement));
+	BPQueueElement* queueElem = (BPQueueElement*)malloc(sizeof(*queueElem));
 
 	for(int i=0; i < *numOfIndices; i++)
 	{

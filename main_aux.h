@@ -2,12 +2,8 @@
 #define MAIN_AUX_H_
 
 #include <cstring>
-
-extern "C"{
-	#include "SPPoint.h"
-	#include "SPBPriorityQueue.h"
-}
-
+#include "SPBPriorityQueue.h"
+#include "sp_image_proc_util.h"
 
 const char TERMINATING_SYMBOL = '#';
 

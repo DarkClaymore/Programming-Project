@@ -1,6 +1,6 @@
 #include "sp_image_proc_util.h"
-#include <cstddef>
-#include <cstdlib>
+/* #include <cstddef> */
+/* #include <cstdlib> */
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -15,11 +15,16 @@ extern "C"{
 /*The number of channels that are expected on input (R,G,B)*/
 #define NUM_OF_CHANNELS 3
 
-/* Descriptor dimension */
-#define SIFT_DESCRIPTOR_DIM 128
+/* Error message in case we loaded an empty image */
+#define EMPTY_IMAGE_LOADED_ERROR "Image cannot be loaded"
+#define EMPTY_IMAGE_LOADED_ERROR_FORMAT "%s - %s:\n"
+
+/* Error code for exiting after an empty image is tried to be loaded*/
+#define ERROR_CODE -1
 
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
+    // TODO: break into smaller functions?
     if (str == NULL || nBins <= 0) {
         return NULL;
     }
@@ -30,7 +35,10 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     src = imread(str, CV_LOAD_IMAGE_COLOR);
 
     if (src.empty()) {
-        return NULL;
+        // TODO: full path or relative path?
+        printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
+        exit(ERROR_CODE);
+
     }
 
     /* Separate the image in 3 places ( B, G and R ) */
@@ -58,6 +66,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     bool pointsCreateFailure = false;
     for (int i = 0; i < NUM_OF_CHANNELS; i++) {
         calcHist(&bgr_planes[i], nImages, 0, Mat(), hists[i], 1, &nBins, &histRange);
+
         /* flip BGR to RGB */
         /* TODO: make sure we can cast this way */
         pointsArray[NUM_OF_CHANNELS - i - 1] = spPointCreate((double*)hists[i].data, nBins, imageIndex);
@@ -70,7 +79,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
             spPointDestroy(pointsArray[i]); 
         }
         free(pointsArray);
-        pointsArray = NULL;
+        return NULL;
     }
     return pointsArray;
 }
@@ -82,8 +91,11 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
 	//Add all distances multiplied by 0.33 to get the average distance
 	for(int i=0; i < NUM_OF_CHANNELS; i++)
 	{
-		if (rgbHistA+i == NULL || rgbHistB+i == NULL)
-			return -1; //A null pointer in one of the channels. Distance can't be calculated.
+		if (rgbHistA[i] == NULL || rgbHistB[i] == NULL) {
+			/* return -1; //A null pointer in one of the channels. Distance can't be calculated. */
+                    return ERROR_CODE;
+                }
+                    
 
 		averageDistance += 0.33 * spPointL2SquaredDistance(rgbHistA[i], rgbHistB[i]);
 	}
@@ -91,9 +103,7 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
 	return averageDistance;
 }
 
-
-SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures)
-{
+SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures) {
     if (str == NULL || nFeaturesToExtract <= 0 || nFeatures == NULL) {
         return NULL;
     }
@@ -103,7 +113,10 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     /* Load img - gray scale mode! */
     src = cv::imread(str, CV_LOAD_IMAGE_GRAYSCALE);
     if (src.empty()) {
-        return NULL;
+        // TODO: full path or relative path?
+        printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
+        exit(ERROR_CODE);
+
     }
 
     /* Key points will be stored in kp1; */
@@ -126,7 +139,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     }
 
     /* number of features we actually extracted */
-    *nFeatures = ds1.size().height;
+    *nFeatures = ds1.rows;
 
     /* allocate nFeatures points */
     pointsArray = (SPPoint**)malloc(sizeof(*pointsArray) * *nFeatures);
@@ -138,7 +151,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     bool pointsCreateFailure = false;
     for (int i = 0; i < *nFeatures; i++) {
         // TODO: not sure about that, debug!
-        pointsArray[i] = spPointCreate((double*)ds1.row(i).data, SIFT_DESCRIPTOR_DIM, imageIndex);            
+        pointsArray[i] = spPointCreate((double*)ds1.row(i).data, ds1.cols, imageIndex);            
         if (pointsArray[i] == NULL) {
             pointsCreateFailure = true;
         }
@@ -166,15 +179,15 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 
 
 	/*Allocate memory for storing the kClosest indices of images closest to queryFeature*/
-	int* closestImgIndices = (int*)malloc(kClosest*sizeof(int));
+	int* closestImgIndices = (int*)malloc(kClosest*sizeof(*closestImgIndices));
 	if (closestImgIndices == NULL)
 		return NULL; /*Failed to allocate memory*/
 
 	/*Create a priority queue of size kClosest*/
 	SPBPQueue* priorityQueue = spBPQueueCreate(kClosest);
+        // TODO: what if create fails?
 
 	for(int i = 0; i < numberOfImages; i++) /*Go over each image*/
-            // GUY - [i] is a mistake?
 		for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
 		{
 			/*Calculate the L2 distance between the feature and queryFeature*/
@@ -182,6 +195,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 
 			/*Enqueue the L2 distance to the priority queue, with the image's index*/
 			spBPQueueEnqueue(priorityQueue, i, distance);
+                        // TODO: what if enqueue fails?
 		}
 
 	/*Get the size of the queue, in case it's smaller than kClosest*/

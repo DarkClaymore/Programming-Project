@@ -1,13 +1,6 @@
-/* #include "sp_image_proc_util.h" */
 #include "main_aux.h"
 #include <cstdlib>
-/* #include <cstddef> */
-/* #include <cstdio> */
 
-/* extern "C"{ */
-/* //include your own C source files */
-/* #include "SPPoint.h" */
-/* } */
 
 int main()
 {
@@ -15,7 +8,18 @@ int main()
 	PROGRAM_STATE programState = PROGRAM_STATE_RUNNING;
 
 	/*Initialise and allocate memory for the database of images*/
-	ImageDatabase* database = (ImageDatabase*)malloc(sizeof(ImageDatabase));
+	ImageDatabase* database = (ImageDatabase*)malloc(sizeof(*database));
+
+	if (database == NULL)
+		programState = PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
+
+	/*Initialise int values to not hold garbage data in later stages if not overwritten by input*/
+	database->nImages = 0;
+	database->nBins = 0;
+	database->nFeaturesToExtract = 0;
+	database->nRGBHistsExtracted = 0;
+	database->nSIFTDescriptorsExtracted = 0;
+
 
 	/*Fill the database with user's input*/
 	programState = GetImageDatabaseFromUser(database);

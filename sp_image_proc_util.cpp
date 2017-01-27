@@ -1,6 +1,4 @@
 #include "sp_image_proc_util.h"
-/* #include <cstddef> */
-/* #include <cstdlib> */
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -21,6 +19,9 @@ extern "C"{
 
 /* Error code for exiting after an empty image is tried to be loaded*/
 #define ERROR_CODE -1
+
+/*The proportion each channel contributes toward the total L2 distance calculated based on RGB hists*/
+#define CHANNEL_L2_DISTANCE_PROPORTION 0.33
 
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
@@ -91,13 +92,10 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
 	//Add all distances multiplied by 0.33 to get the average distance
 	for(int i=0; i < NUM_OF_CHANNELS; i++)
 	{
-		if (rgbHistA[i] == NULL || rgbHistB[i] == NULL) {
-			/* return -1; //A null pointer in one of the channels. Distance can't be calculated. */
-                    return ERROR_CODE;
-                }
-                    
+		if (rgbHistA[i] == NULL || rgbHistB[i] == NULL)
+			return ERROR_CODE;//A null pointer in one of the channels. Distance can't be calculated. */
 
-		averageDistance += 0.33 * spPointL2SquaredDistance(rgbHistA[i], rgbHistB[i]);
+		averageDistance += CHANNEL_L2_DISTANCE_PROPORTION * spPointL2SquaredDistance(rgbHistA[i], rgbHistB[i]);
 	}
 
 	return averageDistance;
@@ -164,12 +162,12 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
         free(pointsArray);
         pointsArray = NULL;
     }
-    return 0;
 
+    return pointsArray;
 }
 
-int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures, int numberOfImages, int* nFeaturesPerImage) {
-
+int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures, int numberOfImages, int* nFeaturesPerImage)
+{
 	/*Input validation*/
 	if (queryFeature == NULL ||
 		databaseFeatures == NULL ||
@@ -177,45 +175,59 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		nFeaturesPerImage == NULL)
 		return NULL;
 
+	/*Whether the procedure should keep running or encountered a memory allocation error and should exit*/
+	bool isKeepRunning = true;
 
 	/*Allocate memory for storing the kClosest indices of images closest to queryFeature*/
 	int* closestImgIndices = (int*)malloc(kClosest*sizeof(*closestImgIndices));
-	if (closestImgIndices == NULL)
-		return NULL; /*Failed to allocate memory*/
 
 	/*Create a priority queue of size kClosest*/
 	SPBPQueue* priorityQueue = spBPQueueCreate(kClosest);
-        // TODO: what if create fails?
 
-	for(int i = 0; i < numberOfImages; i++) /*Go over each image*/
-		for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
-		{
-			/*Calculate the L2 distance between the feature and queryFeature*/
-			double distance = spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature);
+	if (closestImgIndices == NULL || priorityQueue == NULL)
+		isKeepRunning = false; /*Failed to allocate memory*/
 
-			/*Enqueue the L2 distance to the priority queue, with the image's index*/
-			spBPQueueEnqueue(priorityQueue, i, distance);
-                        // TODO: what if enqueue fails?
-		}
-
-	/*Get the size of the queue, in case it's smaller than kClosest*/
-	int queueSize = spBPQueueSize(priorityQueue);
-	BPQueueElement queueElem; /*A helper to retrieve elements from the priority queue*/
-
-	/*Go over all elements in the priority queue to retrieve image indices*/
-	for(int i = 0; i < queueSize; i++)
+	if (isKeepRunning)
 	{
-		/*Get the element with the lowest value in the queue*/
-		spBPQueuePeek(priorityQueue, &queueElem);
+		for(int i = 0; i < numberOfImages; i++) /*Go over each image*/
+			for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
+			{
+				/*Calculate the L2 distance between the feature and queryFeature*/
+				double distance = spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature);
 
-		/*Add the index of the queue element to the output array*/
-		closestImgIndices[i] = queueElem.index;
+				/*Enqueue the L2 distance to the priority queue, with the image's index*/
+				SP_BPQUEUE_MSG msg = spBPQueueEnqueue(priorityQueue, i, distance);
 
-		/*Dequeue the lowest value element in preparation for the next iteration*/
-		spBPQueueDequeue(priorityQueue);
+				if (msg == SP_BPQUEUE_OUT_OF_MEMORY)
+				{
+					isKeepRunning = false;
+					break;
+				}
+			}
 	}
 
-	/*Destroy the priority queue to free all its memory*/
+	if (isKeepRunning)
+	{
+		/*Get the size of the queue, in case it's smaller than kClosest*/
+		int queueSize = spBPQueueSize(priorityQueue);
+		BPQueueElement queueElem; /*A helper to retrieve elements from the priority queue*/
+
+		/*Go over all elements in the priority queue to retrieve image indices*/
+		for(int i = 0; i < queueSize; i++)
+		{
+			/*Get the element with the lowest value in the queue*/
+			spBPQueuePeek(priorityQueue, &queueElem);
+
+			/*Add the index of the queue element to the output array*/
+			closestImgIndices[i] = queueElem.index;
+
+			/*Dequeue the lowest value element in preparation for the next iteration*/
+			spBPQueueDequeue(priorityQueue);
+		}
+	}
+
+
+	/*Free all allocated memory for the queue*/
 	spBPQueueDestroy(priorityQueue);
 
 	return closestImgIndices;

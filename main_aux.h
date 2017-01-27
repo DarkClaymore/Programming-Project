@@ -3,8 +3,9 @@
 
 #include <cstring>
 #include "sp_image_proc_util.h"
-extern "C" {
-    #include "SPBPriorityQueue.h"
+
+extern "C"{
+	#include "SPBPriorityQueue.h"
 }
 
 
@@ -19,6 +20,14 @@ const char TERMINATING_SYMBOL = '#';
 /*The number of closest images to print for an inputed query image ,
  * Applies for both RGB hist distance compare and to SIFT descriptors distance*/
 #define NUM_OF_CLOSEST_IMAGES_TO_PRINT 5
+
+/* The number of closet images to count for each SIFT feature of the query image
+ */
+#define NUM_OF_CLOSET_IMAGES_TO_SIFT_FEATURE 5
+
+/*The number of channels that are expected on input (R,G,B)*/
+#define NUM_OF_CHANNELS 3
+
 
 /*Input messages*/
 #define ENTER_DIRECTORY_MSG "Enter images directory path:\n"
@@ -38,12 +47,12 @@ const char TERMINATING_SYMBOL = '#';
 
 /** State machine flags for main(), to trace its state through different sub-methods **/
 typedef enum ProgramStateTypes {
-    PROGRAM_STATE_RUNNING, /*Main() is still running*/
-    PROGRAM_STATE_MEMORY_ERROR, /*Encountered memory allocation error*/
-    PROGRAM_STATE_INVALID_N_IMAGES, /*An invalid number of images was inputed*/
-    PROGRAM_STATE_INVALID_N_BINS, /*An invalid number of bins was inputed*/
-    PROGRAM_STATE_INVALID_N_FEATURES, /*An invalid number of features was inputed*/
-    PROGRAM_STATE_EXIT, /*Normal program exit*/
+	PROGRAM_STATE_RUNNING, /*Main() is still running*/
+	PROGRAM_STATE_MEMORY_ERROR, /*Encountered memory allocation error*/
+	PROGRAM_STATE_INVALID_N_IMAGES, /*An invalid number of images was inputed*/
+	PROGRAM_STATE_INVALID_N_BINS, /*An invalid number of bins was inputed*/
+	PROGRAM_STATE_INVALID_N_FEATURES, /*An invalid number of features was inputed*/
+	PROGRAM_STATE_EXIT, /*Normal program exit*/
 } PROGRAM_STATE;
 
 
@@ -51,15 +60,19 @@ typedef enum ProgramStateTypes {
  * Contains all the info the user inputed for the image database
  */
 typedef struct image_database {
-    int nImages; /*The number of images*/
-    int nBins; /*The number of bins*/
-    int nFeaturesToExtract; /*Number of features to extract from each image*/
-    char* imgDirectory; /*The directory of the images*/
-    char* imgPrefix; /*The prefix of the images*/
-    char* imgSuffix; /*The suffix of the images*/
-    SPPoint*** RGBHists; /*The RGB histograms of the images*/
-    SPPoint*** SIFTDescriptors; /*The SIFT descriptors of the images*/
-    int* nFeatures; /*The actual number of features that was extracted for each image*/
+	int nImages; /*The number of images*/
+	int nBins; /*The number of bins to e*/
+	int nFeaturesToExtract; /*Number of features to extract from each image*/
+
+	int nRGBHistsExtracted; /*The number of images for which RGB hists were successfully extracted*/
+	int nSIFTDescriptorsExtracted; /*The number of images for which sift features were successfully extracted*/
+
+	char* imgDirectory; /*The directory of the images*/
+	char* imgPrefix; /*The prefix of the images*/
+	char* imgSuffix; /*The suffix of the images*/
+	SPPoint*** RGBHists; /*The RGB histograms of the images*/
+	SPPoint*** SIFTDescriptors; /*The SIFT descriptors of the images*/
+	int* nFeatures; /*The actual number of features that was extracted for each image*/
 } ImageDatabase;
 
 
@@ -113,6 +126,21 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
  */
 PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const ImageDatabase* database);
 
+
+/***
+ * Calculates and prints the closest NUM_OF_CLOSEST_IMAGES_TO_PRINT images to the query image
+ * based on L2 distances of SIFT descriptors.
+ *
+ * The closest images will be the ones which have the highest total number of closest
+ * SIFT descriptors
+ *
+ * @param querySIFTDescriptors - all the SIFT descriptors of the query.
+ * @param nQueryFeatures - the number of SIFT descriptors the query has
+ * @param database - the database of images with which the query image will be compared.
+ */
+PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDescriptors, int nQueryFeatures, const ImageDatabase* database);
+
+
 /**
  * Destroy the image database and free all allocated memory for it
  *
@@ -158,6 +186,14 @@ int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices);
  * @param numOfIndices - the size of indices array
  */
 void PrintIndices(int* indices, int numOfIndices);
+
+/***
+ * A wrapper for a printf method that prints a static message.
+ * Used in order turn on or off fflush(NULL) for windows debugging purposes
+ *
+ * @param msg - the msg to print
+ */
+void PrintMsg(const char* msg);
 
 
 

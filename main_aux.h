@@ -2,8 +2,11 @@
 #define MAIN_AUX_H_
 
 #include <cstring>
-#include "SPBPriorityQueue.h"
 #include "sp_image_proc_util.h"
+extern "C" {
+    #include "SPBPriorityQueue.h"
+}
+
 
 const char TERMINATING_SYMBOL = '#';
 
@@ -35,12 +38,12 @@ const char TERMINATING_SYMBOL = '#';
 
 /** State machine flags for main(), to trace its state through different sub-methods **/
 typedef enum ProgramStateTypes {
-	PROGRAM_STATE_RUNNING, /*Main() is still running*/
-	PROGRAM_STATE_MEMORY_ERROR, /*Encountered memory allocation error*/
-	PROGRAM_STATE_INVALID_N_IMAGES, /*An invalid number of images was inputed*/
-	PROGRAM_STATE_INVALID_N_BINS, /*An invalid number of bins was inputed*/
-	PROGRAM_STATE_INVALID_N_FEATURES, /*An invalid number of features was inputed*/
-	PROGRAM_STATE_EXIT, /*Normal program exit*/
+    PROGRAM_STATE_RUNNING, /*Main() is still running*/
+    PROGRAM_STATE_MEMORY_ERROR, /*Encountered memory allocation error*/
+    PROGRAM_STATE_INVALID_N_IMAGES, /*An invalid number of images was inputed*/
+    PROGRAM_STATE_INVALID_N_BINS, /*An invalid number of bins was inputed*/
+    PROGRAM_STATE_INVALID_N_FEATURES, /*An invalid number of features was inputed*/
+    PROGRAM_STATE_EXIT, /*Normal program exit*/
 } PROGRAM_STATE;
 
 
@@ -48,15 +51,15 @@ typedef enum ProgramStateTypes {
  * Contains all the info the user inputed for the image database
  */
 typedef struct image_database {
-	int nImages; /*The number of images*/
-	int nBins; /*The number of bins*/
-	int nFeaturesToExtract; /*Number of features to extract from each image*/
-	char* imgDirectory; /*The directory of the images*/
-	char* imgPrefix; /*The prefix of the images*/
-	char* imgSuffix; /*The suffix of the images*/
-	SPPoint*** RGBHists; /*The RGB histograms of the images*/
-	SPPoint*** SIFTDescriptors; /*The SIFT descriptors of the images*/
-	int* nFeatures; /*The actual number of features that was extracted for each image*/
+    int nImages; /*The number of images*/
+    int nBins; /*The number of bins*/
+    int nFeaturesToExtract; /*Number of features to extract from each image*/
+    char* imgDirectory; /*The directory of the images*/
+    char* imgPrefix; /*The prefix of the images*/
+    char* imgSuffix; /*The suffix of the images*/
+    SPPoint*** RGBHists; /*The RGB histograms of the images*/
+    SPPoint*** SIFTDescriptors; /*The SIFT descriptors of the images*/
+    int* nFeatures; /*The actual number of features that was extracted for each image*/
 } ImageDatabase;
 
 

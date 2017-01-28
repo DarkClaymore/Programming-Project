@@ -290,17 +290,13 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 
 	/*** Counts how many times each image had a descriptor that's close to a descriptor of the query
 	  closeDescriptorsCnt[i] = the number of times the i-th image had close descriptors  */
-	int* closeDescriptorsCnt = (int*)malloc(sizeof(*closeDescriptorsCnt) * database->nImages);
+	int* closeDescriptorsCnt = (int*)calloc(sizeof(*closeDescriptorsCnt) , database->nImages);
 
 	/*A priority queue to find the closet images to the query, based on total SIFT feature count*/
 	SPBPQueue* imagesPriorityQueue = spBPQueueCreate(NUM_OF_CLOSEST_IMAGES_TO_PRINT);
 
 	if (closeDescriptorsCnt == NULL || imagesPriorityQueue == NULL)
 		resProgramState = PROGRAM_STATE_MEMORY_ERROR;
-
-
-	for(int i = 0; i < database->nImages; ++i)
-		closeDescriptorsCnt[i] = 0; /*Initialise all counters to avoid garbage data*/
 
 	if (resProgramState == PROGRAM_STATE_RUNNING)
 	{

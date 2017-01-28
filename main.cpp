@@ -8,18 +8,10 @@ int main()
 	PROGRAM_STATE programState = PROGRAM_STATE_RUNNING;
 
 	/*Initialise and allocate memory for the database of images*/
-	ImageDatabase* database = (ImageDatabase*)malloc(sizeof(*database));
+	ImageDatabase* database = (ImageDatabase*)calloc(sizeof(*database), 1);
 
 	if (database == NULL)
 		programState = PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
-
-	/*Initialise int values to not hold garbage data in later stages if not overwritten by input*/
-	database->nImages = 0;
-	database->nBins = 0;
-	database->nFeaturesToExtract = 0;
-	database->nRGBHistsExtracted = 0;
-	database->nSIFTDescriptorsExtracted = 0;
-
 
 	/*Fill the database with user's input*/
 	programState = GetImageDatabaseFromUser(database);

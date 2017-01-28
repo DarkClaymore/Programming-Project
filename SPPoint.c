@@ -1,82 +1,101 @@
 #include "SPPoint.h"
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-struct sp_point_t{
-	int dim; /*the dimension of the point*/
-	int index; /* the index of the point*/
-	double* coordinates; /*All the coordinates of the point*/
 
+
+struct sp_point_t {
+    double* data;
+    int dim;
+    int index;
 };
 
 
-SPPoint* spPointCreate(double* data, int dim, int index){
+SPPoint* spPointCreate(double* data, int dim, int index) {
 
-	if (dim <= 0) return NULL; /*Invalid dimension*/
-	if (index < 0) return NULL; /*Invalid index*/
+    if (data == NULL || dim <= 0 || index < 0) {
+        return NULL;
+    }
 
-	 /*Allocate memory for the point*/
-	SPPoint* newPoint = (SPPoint*)malloc(sizeof(SPPoint));
-	if (newPoint == NULL)
-		return NULL; /*Failed to allocate memory*/
+    int sizeOfCoords = sizeof(*data) * dim;
 
+    SPPoint * newPoint = malloc(sizeof(*newPoint));
 
-	/*Allocate memory for the coordinates*/
-	double* coordinates =  (double*)malloc(dim*sizeof(double));
-	if (coordinates == NULL) return NULL; /*Failed to allocate memory*/
+    if (newPoint == NULL) {
+        return NULL;
+    }
 
-	/*Load all coordinates into the point*/
-	for (int i = 0; i<dim; ++i) {
-		coordinates[i]=data[i];
-	}
-	newPoint->coordinates = coordinates;
-	newPoint->dim=dim;
-	newPoint->index=index;
-	return newPoint;
+    double * newData = malloc(sizeOfCoords);
+    if (newData == NULL) {
+        spPointDestroy(newPoint);
+        return NULL;
+    }
+
+    newPoint-> index = index;
+    newPoint-> dim = dim;
+    newPoint->data = newData;
+    memcpy(newData, data, sizeOfCoords);
+    return newPoint;
 }
 
-SPPoint* spPointCopy(SPPoint* source)
-{
-	assert(source != NULL); /*Make sure that the source isn't null*/
+SPPoint* spPointCopy(SPPoint* source) {
+    assert(source != NULL);
 
-	/*Return a new point with source's data*/
-	return spPointCreate(source->coordinates,source->dim,source->index);
+    int sizeOfCoords = sizeof(*source->data) * source->dim;
+
+    SPPoint * newPoint = malloc(sizeof(*newPoint));
+    if (newPoint == NULL) {
+        return NULL;
+    }
+
+    double * newData = malloc(sizeOfCoords);
+    if (newData == NULL) {
+        spPointDestroy(newPoint);
+        return NULL;
+    }
+    
+
+    newPoint->dim = source->dim;
+    newPoint->index = source->index;
+    newPoint->data = newData;
+    memcpy(newData, source->data, sizeOfCoords);
+
+    return newPoint;
+
 }
 
-void spPointDestroy(SPPoint* point){
+void spPointDestroy(SPPoint* point) {
+    if (point != NULL) {
+       free(point->data);
+       free(point);
+    }
 
-	if (point == NULL) return; /*Not pointing to any object*/
-
-	/*First free the memory for the coordinates*/
-	free(point->coordinates);
-	/*Then free memory for the whole object*/
-	free(point);
 }
 
-int spPointGetDimension(SPPoint* point){
-	assert(point != NULL); /*Make sure that the point isn't null*/
-	return point->dim;
+int spPointGetDimension(SPPoint* point) {
+    assert(point != NULL);
+    return point->dim;
 }
 
-int spPointGetIndex(SPPoint* point){
-	assert(point != NULL); /*Make sure that the point isn't null*/
-	return point->index;
+int spPointGetIndex(SPPoint* point) {
+    assert(point != NULL);
+    return point->index;
 }
 
-double spPointGetAxisCoor(SPPoint* point, int axis){
-	assert(point != NULL); /*Make sure that the point isn't null*/
-	assert(axis <= point->dim); /*Make sure the axis isn't bigger than the point's dimension*/
-	return point->coordinates[axis]; /*Return the requested coordinate*/
-}
-double spPointL2SquaredDistance(SPPoint* p, SPPoint* q){
-	assert(p != NULL && q != NULL); /*Make sure that the points aren't null*/
-	assert(p->dim == q->dim); /*Make sure both points have the same dimension*/
 
-	double res = 0.0;
-	for (int i = 0; i < q->dim; ++i) /*L2 calculation*/
-	{
-		/*Add new element to the L2 result: (p[i] - q[i])^2*/
-		res+=(p->coordinates[i]-q->coordinates[i])*(p->coordinates[i]-q->coordinates[i]);
-	}
-	return res;
+double spPointGetAxisCoor(SPPoint* point, int axis) {
+    assert(point != NULL && axis < point->dim);
+    return point->data[axis];
 }
 
+double spPointL2SquaredDistance(SPPoint* p, SPPoint* q) {
+    assert(p != NULL && q != NULL && p->dim == q->dim);
+    double * pData = p->data;
+    double * qData = q->data;
+    double distance = 0;
+    for (int i = 0; i < p->dim; i++) {
+       distance += (pData[i] - qData[i])*(pData[i] - qData[i]);
+    }
+    return distance;
+
+}

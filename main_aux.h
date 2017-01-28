@@ -9,7 +9,7 @@ extern "C"{
 }
 
 
-const char TERMINATING_SYMBOL = '#';
+extern const char * TERMINATING_SYMBOL;
 
 /*The assumed max length of an image path, as instructed*/
 #define MAX_IMG_PATH_LEGTH 1024

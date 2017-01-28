@@ -6,6 +6,7 @@ extern "C"{
 	#include "SPBPriorityQueue.h"
 }
 
+const char * TERMINATING_SYMBOL = "#";
 
 PROGRAM_STATE GetImageDatabaseFromUser(ImageDatabase* database)
 {
@@ -177,8 +178,9 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 		PrintMsg(ENTER_QUERY_OR_TERMINATE_MSG);
 		scanf("%s", queryImagePath);
 
-		if (strcmp(queryImagePath, &TERMINATING_SYMBOL) == 0)
+		if (strcmp(queryImagePath, TERMINATING_SYMBOL) == 0) {
 			resProgramState = PROGRAM_STATE_EXIT; /*The user requested to terminate the program*/
+                }
 	}
 
 	if (resProgramState == PROGRAM_STATE_RUNNING) /*If should keep running or skip to end*/

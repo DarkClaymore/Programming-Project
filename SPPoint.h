@@ -20,7 +20,7 @@
  */
 
 /** Type for defining the point **/
-typedef struct sp_point_t SPPoint;
+typedef struct sp_point_t  SPPoint;
 
 /**
  * Allocates a new point in the memory.
@@ -35,7 +35,7 @@ typedef struct sp_point_t SPPoint;
  * 
  * 
  * @return
- * NULL in case allocation failure occurred OR data is NULL OR dim <=0 OR index <0
+ * NULL in case allocation failure ocurred OR data is NULL OR dim <=0 OR index <0
  * Otherwise, the new point is returned
  */
 SPPoint* spPointCreate(double* data, int dim, int index);

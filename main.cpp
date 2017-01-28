@@ -29,5 +29,5 @@ int main()
 
 	/*Print the exit message of the program based on the last program state*/
 	PrintExitMessage(programState);
-
+	return 0;
 }

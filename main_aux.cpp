@@ -257,7 +257,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 		{
 			PrintMsg(NEAREST_IMAGES_GLOBAL_DESC_MSG);
 
-			int* nearestImgIndices;
+			int* nearestImgIndices = NULL;
 			int* numOfIndices = (int*)malloc(sizeof(*numOfIndices) * 1);
 
 			if (numOfIndices == NULL)

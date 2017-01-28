@@ -95,6 +95,8 @@ void DestroyImageDataBase(ImageDatabase* database)
 				for(int j=0; j<database->nFeatures[i]; ++j)
 					if (database->SIFTDescriptors[i][j] != NULL)
 						spPointDestroy(database->SIFTDescriptors[i][j]);
+
+				free(database->SIFTDescriptors[i]);
 			}
 		}
 	}
@@ -476,5 +478,3 @@ void PrintMsg(const char* msg)
 	printf(msg);
 	fflush(NULL); /*For windows debugging purposes*/
 }
-
-

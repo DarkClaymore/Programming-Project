@@ -159,8 +159,8 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 	/*The result of the program's state after this procedure*/
 	PROGRAM_STATE resProgramState = PROGRAM_STATE_RUNNING;
 
-	SPPoint** queryRGBHists; /*Query image RGB hists*/
-	SPPoint** querySIFTDescriptors; /*Query image descriptors*/
+	SPPoint** queryRGBHists = NULL; /*Query image RGB hists*/
+	SPPoint** querySIFTDescriptors = NULL; /*Query image descriptors*/
 
 	bool hasQueryRGBHists = false; /*Set to true if the query's RGB hists were successfully retrieved*/
 	bool hasQuerySIFTDescriptors = false; /*Set to true if the query's SIFT descriptors were successfully retrieved*/
@@ -231,9 +231,9 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 
 	/*Use a priority queue to collect the closest images based on L2 distacnes.
 	 * The queue doesn't need to be any larger than the number of images to print.*/
-	SPBPQueue* imagesPriortiyQueue = spBPQueueCreate(NUM_OF_CLOSEST_IMAGES_TO_PRINT);
+	SPBPQueue* imagesPriorityQueue = spBPQueueCreate(NUM_OF_CLOSEST_IMAGES_TO_PRINT);
 
-	if (imagesPriortiyQueue == NULL)
+	if (imagesPriorityQueue == NULL)
 		resProgramState = PROGRAM_STATE_MEMORY_ERROR;
 
 	if (resProgramState == PROGRAM_STATE_RUNNING)
@@ -244,7 +244,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 			double distance = spRGBHistL2Distance(queryRGBHists, database->RGBHists[i]);
 
 			/*Enqueue the L2 distance with the compared image's index*/
-			SP_BPQUEUE_MSG msg = spBPQueueEnqueue(imagesPriortiyQueue, i, distance);
+			SP_BPQUEUE_MSG msg = spBPQueueEnqueue(imagesPriorityQueue, i, distance);
 
 			if (msg == SP_BPQUEUE_OUT_OF_MEMORY)
 			{
@@ -266,7 +266,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 			if (resProgramState == PROGRAM_STATE_RUNNING) /*Continue only if successfully allocated*/
 			{
 				/*Get the indices of the closest images to the query image*/
-				nearestImgIndices = GetBPQueueIndices(imagesPriortiyQueue, numOfIndices);
+				nearestImgIndices = GetBPQueueIndices(imagesPriorityQueue, numOfIndices);
 
 				/*Print out the indices*/
 				PrintIndices(nearestImgIndices, *numOfIndices);
@@ -278,7 +278,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 	}
 
 	/*Destroy the priority queue to free memory*/
-	spBPQueueDestroy(imagesPriortiyQueue);
+	spBPQueueDestroy(imagesPriorityQueue);
 
 	return PROGRAM_STATE_RUNNING;
 }
@@ -307,7 +307,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 		for(int i=0; i < nQueryFeatures; ++i) /*Go over each feature of the query image*/
 		{
 			/*The list of the images with closest features to the i-th feature of the query*/
-			int* closetImgIndices;
+			int* closetImgIndices = NULL;
 			closetImgIndices = spBestSIFTL2SquaredDistance(
 									NUM_OF_CLOSET_IMAGES_TO_SIFT_FEATURE,
 									querySIFTDescriptors[i],

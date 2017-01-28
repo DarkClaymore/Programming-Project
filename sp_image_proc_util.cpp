@@ -28,7 +28,6 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     if (str == NULL || nBins <= 0) {
         return NULL;
     }
-    SPPoint ** pointsArray = NULL;
     Mat src;
 
     /* Load image */
@@ -55,7 +54,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     Mat hists [NUM_OF_CHANNELS];
 
     /* allocate our point pointers array (to store histograms in) */
-    pointsArray = (SPPoint**)malloc(sizeof(*pointsArray) * NUM_OF_CHANNELS);
+    SPPoint ** pointsArray = (SPPoint**)malloc(sizeof(*pointsArray) * NUM_OF_CHANNELS);
     if (pointsArray == NULL) {
         return NULL;
     }

@@ -464,13 +464,10 @@ void PrintIndices(int* indices, int numOfIndices)
 	}
 
 	PrintMsg("\n"); /*Start new line in the end*/
-
-	fflush(NULL);
 }
 
 
 void PrintMsg(const char* msg)
 {
-	printf(msg);
-	fflush(NULL); /*For windows debugging purposes*/
+	printf("%s", msg);
 }

@@ -68,12 +68,12 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     double * histData;
     histData = (double*)malloc(sizeof(*histData) * nBins);
     if (histData == NULL) {
-        pointsCreateFailure = true; 
+        pointsCreateFailure = true;
     }
     for (int i = 0; i < NUM_OF_CHANNELS && !pointsCreateFailure; ++i) {
         calcHist(&bgr_planes[i], nImages, 0, Mat(), hists[i], 1, &nBins, &histRange);
         for (int j = 0; j < nBins; ++j) {
-           histData[j] = hists[i].at<float>(j); 
+           histData[j] = hists[i].at<float>(j);
         }
         /* flip BGR to RGB */
         pointsArray[NUM_OF_CHANNELS - i - 1] = spPointCreate(histData, nBins, imageIndex);
@@ -157,13 +157,13 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     double * featuresData;
     featuresData = (double*)malloc(sizeof(*featuresData) * ds1.cols);
     if (featuresData == NULL) {
-       pointsCreateFailure = true; 
+       pointsCreateFailure = true;
     }
     for (int i = 0; i < *nFeatures && !pointsCreateFailure; ++i) {
         for (int j = 0; j < ds1.cols; ++j) {
             featuresData[j] = ds1.at<float>(i,j);
         }
-        pointsArray[i] = spPointCreate(featuresData, ds1.cols, imageIndex);            
+        pointsArray[i] = spPointCreate(featuresData, ds1.cols, imageIndex);
         if (pointsArray[i] == NULL) {
             pointsCreateFailure = true;
         }
@@ -205,7 +205,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	if (isKeepRunning)
 	{
 		for(int i = 0; i < numberOfImages; ++i) /*Go over each image*/
-			for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
+			for(int j = 0; j < nFeaturesPerImage[i]; ++j) /*Go over each feature in image*/
 			{
 				/*Calculate the L2 distance between the feature and queryFeature*/
 				double distance = spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature);

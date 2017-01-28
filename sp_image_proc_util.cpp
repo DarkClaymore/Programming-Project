@@ -25,18 +25,16 @@ extern "C"{
 
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
-    // TODO: break into smaller functions?
     if (str == NULL || nBins <= 0) {
         return NULL;
     }
-    SPPoint ** pointsArray;
+    SPPoint ** pointsArray = NULL;
     Mat src;
 
     /* Load image */
     src = imread(str, CV_LOAD_IMAGE_COLOR);
 
     if (src.empty()) {
-        // TODO: full path or relative path?
         printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
         exit(ERROR_CODE);
 
@@ -65,7 +63,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     /* Compute the histograms, and store their data in a point */ 
     /* The output type of the matrices is CV_32F (float), we cast it to double */
     bool pointsCreateFailure = false;
-    double * histData;
+    double * histData = NULL;
     histData = (double*)malloc(sizeof(*histData) * nBins);
     if (histData == NULL) {
         pointsCreateFailure = true;
@@ -112,13 +110,12 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     if (str == NULL || nFeaturesToExtract <= 0 || nFeatures == NULL) {
         return NULL;
     }
-    SPPoint ** pointsArray;
+    SPPoint ** pointsArray = NULL;
     cv::Mat src;
 
     /* Load img - gray scale mode! */
     src = cv::imread(str, CV_LOAD_IMAGE_GRAYSCALE);
     if (src.empty()) {
-        // TODO: full path or relative path?
         printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
         exit(ERROR_CODE);
 
@@ -154,7 +151,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 
     /* create an array of nFeatures points, each containing the corresponding descriptor */
     bool pointsCreateFailure = false;
-    double * featuresData;
+    double * featuresData = NULL;
     featuresData = (double*)malloc(sizeof(*featuresData) * ds1.cols);
     if (featuresData == NULL) {
        pointsCreateFailure = true;
@@ -168,7 +165,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
             pointsCreateFailure = true;
         }
     }
-    // TODO: move this one to external function?
+
     free(featuresData);
     if (pointsCreateFailure) {
         for (int i = 0; i < *nFeatures; ++i) {

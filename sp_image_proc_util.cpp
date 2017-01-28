@@ -66,22 +66,19 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     /* The output type of the matrices is CV_32F (float), we cast it to double */
     bool pointsCreateFailure = false;
     double * histData;
-    for (int i = 0; i < NUM_OF_CHANNELS; ++i) {
+    histData = (double*)malloc(sizeof(*histData) * nBins);
+    if (histData == NULL) {
+        pointsCreateFailure = true; 
+    }
+    for (int i = 0; i < NUM_OF_CHANNELS && !pointsCreateFailure; ++i) {
         calcHist(&bgr_planes[i], nImages, 0, Mat(), hists[i], 1, &nBins, &histRange);
-        histData = (double*)malloc(sizeof(*histData) * nBins);
-        if (histData == NULL) {
-           pointsCreateFailure = true; 
-           break;
-        }
-        for (int j = 0; j < nBins; j++) {
+        for (int j = 0; j < nBins; ++j) {
            histData[j] = hists[i].at<float>(j); 
         }
         /* flip BGR to RGB */
-        /* TODO: make sure we can cast this way */
         pointsArray[NUM_OF_CHANNELS - i - 1] = spPointCreate(histData, nBins, imageIndex);
         if (pointsArray[NUM_OF_CHANNELS - i - 1] == NULL) {
             pointsCreateFailure = true;
-            break;
         }
     }
     free(histData);
@@ -157,14 +154,22 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 
     /* create an array of nFeatures points, each containing the corresponding descriptor */
     bool pointsCreateFailure = false;
-    for (int i = 0; i < *nFeatures; ++i) {
-        // TODO: not sure about that, debug!
-        pointsArray[i] = spPointCreate((double*)ds1.row(i).data, ds1.cols, imageIndex);            
+    double * featuresData;
+    featuresData = (double*)malloc(sizeof(*featuresData) * ds1.cols);
+    if (featuresData == NULL) {
+       pointsCreateFailure = true; 
+    }
+    for (int i = 0; i < *nFeatures && !pointsCreateFailure; ++i) {
+        for (int j = 0; j < ds1.cols; ++j) {
+            featuresData[j] = ds1.at<float>(i,j);
+        }
+        pointsArray[i] = spPointCreate(featuresData, ds1.cols, imageIndex);            
         if (pointsArray[i] == NULL) {
             pointsCreateFailure = true;
         }
     }
     // TODO: move this one to external function?
+    free(featuresData);
     if (pointsCreateFailure) {
         for (int i = 0; i < *nFeatures; ++i) {
             spPointDestroy(pointsArray[i]); 

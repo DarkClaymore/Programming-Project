@@ -37,6 +37,7 @@ const char TERMINATING_SYMBOL = '#';
 #define ENTER_NUM_OF_BINS_MSG "Enter number of bins:\n"
 #define ENTER_QUERY_OR_TERMINATE_MSG "Enter a query image or # to terminate:\n"
 #define NEAREST_IMAGES_GLOBAL_DESC_MSG "Nearest images using global descriptors:\n"
+#define NEAREST_IMAGES_LOCAL_DESC_MSG "Nearest images using local descriptors:\n"
 
 /*Exit messages*/
 #define MEMORY_ERROR_MSG "An error occurred - allocation failure\n"

@@ -68,7 +68,7 @@ void DestroyImageDataBase(ImageDatabase* database)
 	/*Free RGB hists*/
 	if (database->nRGBHistsExtracted > 0 && database->RGBHists != NULL)
 	{
-		for(int i=0; i < database->nRGBHistsExtracted; i++)
+		for(int i=0; i < database->nRGBHistsExtracted; ++i)
 		{
 			if (database->RGBHists[i] != NULL)
 			{
@@ -83,9 +83,11 @@ void DestroyImageDataBase(ImageDatabase* database)
 	free(database->RGBHists);
 
 	/*Free SIFT descriptors*/
-	if (database->nSIFTDescriptorsExtracted > 0 && database->SIFTDescriptors != NULL && database->nFeatures != NULL)
+	if (database->nSIFTDescriptorsExtracted > 0 &&
+		database->SIFTDescriptors != NULL &&
+		database->nFeatures != NULL)
 	{
-		for(int i=0; i < database->nSIFTDescriptorsExtracted; i++)
+		for(int i=0; i < database->nSIFTDescriptorsExtracted; ++i)
 		{
 			if (database->SIFTDescriptors[i] != NULL)
 			{
@@ -116,7 +118,7 @@ PROGRAM_STATE CalcImageDataBaseHistsAndDescriptors(ImageDatabase* database)
 		return PROGRAM_STATE_MEMORY_ERROR; /*Failed to allocate memory*/
 
 	/*Go over each image and calculate the RGB hist and SIFT descriptors*/
-	for(int i=0; i < database->nImages; i++)
+	for(int i=0; i < database->nImages; ++i)
 	{
 		/*Get the full path of the image*/
 		char* imgPath = GetImagePath(database->imgDirectory, database->imgPrefix, database->imgSuffix, i);
@@ -127,6 +129,7 @@ PROGRAM_STATE CalcImageDataBaseHistsAndDescriptors(ImageDatabase* database)
 		database->RGBHists[i] = spGetRGBHist(imgPath,i, database->nBins);
 
 		/*Calculate SIFT descriptors*/
+		database->nFeatures[i] = 0; /*Initialise*/
 		database->SIFTDescriptors[i] = spGetSiftDescriptors(imgPath,i, database->nFeaturesToExtract, &(database->nFeatures[i]));
 
 		free(imgPath);
@@ -203,12 +206,12 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 	free(queryImagePath);
 
 	if (hasQueryRGBHists) /*If retrieved RGB hists, then destroy all points*/
-		for(int i =0; i < NUM_OF_CHANNELS; i++)
+		for(int i =0; i < NUM_OF_CHANNELS; ++i)
 			spPointDestroy(queryRGBHists[i]);
 	free(queryRGBHists);
 
-	if (querySIFTDescriptors) /*If retrieved SIFT features, then destroy all points*/
-		for(int i =0; i < *queryNFeatures; i++)
+	if (hasQuerySIFTDescriptors) /*If retrieved SIFT features, then destroy all points*/
+		for(int i =0; i < *queryNFeatures; ++i)
 			spPointDestroy(querySIFTDescriptors[i]);
 	free(querySIFTDescriptors);
 	free(queryNFeatures);
@@ -231,34 +234,43 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 
 	if (resProgramState == PROGRAM_STATE_RUNNING)
 	{
-		for(int i=0; i < database->nImages; i++)
+		for(int i=0; i < database->nImages; ++i)
 		{
 			/*Calculate L2 distance between image i and the query image*/
 			double distance = spRGBHistL2Distance(queryRGBHists, database->RGBHists[i]);
 
 			/*Enqueue the L2 distance with the compared image's index*/
-			spBPQueueEnqueue(imagesPriortiyQueue, i, distance);
+			SP_BPQUEUE_MSG msg = spBPQueueEnqueue(imagesPriortiyQueue, i, distance);
+
+			if (msg == SP_BPQUEUE_OUT_OF_MEMORY)
+			{
+				resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error in spBPQueueEnqueue()*/
+				break;
+			}
 		}
 
-		PrintMsg(NEAREST_IMAGES_GLOBAL_DESC_MSG);
-
-		int* nearestImgIndices;
-		int* numOfIndices = (int*)malloc(sizeof(*numOfIndices) * 1);
-
-		if (numOfIndices == NULL)
-			resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error*/
-
-		if (resProgramState == PROGRAM_STATE_RUNNING) /*Continue only if successfully allocated*/
+		if (resProgramState == PROGRAM_STATE_RUNNING)
 		{
-			/*Get the indices of the closest images to the query image*/
-			nearestImgIndices = GetBPQueueIndices(imagesPriortiyQueue, numOfIndices);
+			PrintMsg(NEAREST_IMAGES_GLOBAL_DESC_MSG);
 
-			/*Print out the indices*/
-			PrintIndices(nearestImgIndices, *numOfIndices);
+			int* nearestImgIndices;
+			int* numOfIndices = (int*)malloc(sizeof(*numOfIndices) * 1);
+
+			if (numOfIndices == NULL)
+				resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error*/
+
+			if (resProgramState == PROGRAM_STATE_RUNNING) /*Continue only if successfully allocated*/
+			{
+				/*Get the indices of the closest images to the query image*/
+				nearestImgIndices = GetBPQueueIndices(imagesPriortiyQueue, numOfIndices);
+
+				/*Print out the indices*/
+				PrintIndices(nearestImgIndices, *numOfIndices);
+			}
+
+			free(numOfIndices);
+			free(nearestImgIndices);
 		}
-
-		free(numOfIndices);
-		free(nearestImgIndices);
 	}
 
 	/*Destroy the priority queue to free memory*/
@@ -284,7 +296,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 
 	if (resProgramState == PROGRAM_STATE_RUNNING)
 	{
-		for(int i=0; i < nQueryFeatures; i++) /*Go over each feature of the query image*/
+		for(int i=0; i < nQueryFeatures; ++i) /*Go over each feature of the query image*/
 		{
 			/*The list of the images with closest features to the i-th feature of the quert*/
 			int* closetImgIndices;
@@ -317,7 +329,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 	if (resProgramState == PROGRAM_STATE_RUNNING)
 	{
 		/*Insert the closeness count of each image into the priority queue*/
-		for(int i=0; i < database->nImages; i++)
+		for(int i=0; i < database->nImages; ++i)
 		{
 			/*Since this is a low priority queue, the images will be enqueued with negative count value*/
 			/*This way, the images with the highest scores will actually have "lowest priority" in the queue*/
@@ -341,7 +353,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 
 		if (resProgramState == PROGRAM_STATE_RUNNING)
 		{
-			PrintMsg(NEAREST_IMAGES_GLOBAL_DESC_MSG);
+			PrintMsg(NEAREST_IMAGES_LOCAL_DESC_MSG);
 			PrintIndices(closetImgIndices, *numOfIndices);
 		}
 
@@ -423,7 +435,7 @@ int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices)
 	/*Helper queue elem pointer*/
 	BPQueueElement* queueElem = (BPQueueElement*)malloc(sizeof(*queueElem));
 
-	for(int i=0; i < *numOfIndices; i++)
+	for(int i=0; i < *numOfIndices; ++i)
 	{
 		spBPQueuePeek(source, queueElem); /*Get the first lowest value element*/
 		resIndices[i] = queueElem->index; /*Get the index of the element*/
@@ -439,7 +451,7 @@ int* GetBPQueueIndices(SPBPQueue* source, int* numOfIndices)
 void PrintIndices(int* indices, int numOfIndices)
 {
 	/*Print all indices in a i[1], i[2], i[3]... i[n] format, where  n = numOfIndices*/
-	for(int i = 0; i < numOfIndices; i++)
+	for(int i = 0; i < numOfIndices; ++i)
 	{
 		printf("%d",indices[i]); /*Print an index*/
 

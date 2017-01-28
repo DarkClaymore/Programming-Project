@@ -65,7 +65,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     /* Compute the histograms, and store their data in a point */ 
     /* The output type of the matrices is CV_32F (float), we cast it to double */
     bool pointsCreateFailure = false;
-    for (int i = 0; i < NUM_OF_CHANNELS; i++) {
+    for (int i = 0; i < NUM_OF_CHANNELS; ++i) {
         calcHist(&bgr_planes[i], nImages, 0, Mat(), hists[i], 1, &nBins, &histRange);
 
         /* flip BGR to RGB */
@@ -76,7 +76,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
         }
     }
     if (pointsCreateFailure) {
-        for (int i = 0; i < NUM_OF_CHANNELS; i++) {
+        for (int i = 0; i < NUM_OF_CHANNELS; ++i) {
             spPointDestroy(pointsArray[i]); 
         }
         free(pointsArray);
@@ -90,7 +90,7 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
 
 	//Go over each channel and calculate the L2 distance between hist vectors in A and B
 	//Add all distances multiplied by 0.33 to get the average distance
-	for(int i=0; i < NUM_OF_CHANNELS; i++)
+	for(int i=0; i < NUM_OF_CHANNELS; ++i)
 	{
 		if (rgbHistA[i] == NULL || rgbHistB[i] == NULL)
 			return ERROR_CODE;//A null pointer in one of the channels. Distance can't be calculated. */
@@ -147,7 +147,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 
     /* create an array of nFeatures points, each containing the corresponding descriptor */
     bool pointsCreateFailure = false;
-    for (int i = 0; i < *nFeatures; i++) {
+    for (int i = 0; i < *nFeatures; ++i) {
         // TODO: not sure about that, debug!
         pointsArray[i] = spPointCreate((double*)ds1.row(i).data, ds1.cols, imageIndex);            
         if (pointsArray[i] == NULL) {
@@ -156,7 +156,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
     }
     // TODO: move this one to external function?
     if (pointsCreateFailure) {
-        for (int i = 0; i < *nFeatures; i++) {
+        for (int i = 0; i < *nFeatures; ++i) {
             spPointDestroy(pointsArray[i]); 
         }
         free(pointsArray);
@@ -189,7 +189,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 
 	if (isKeepRunning)
 	{
-		for(int i = 0; i < numberOfImages; i++) /*Go over each image*/
+		for(int i = 0; i < numberOfImages; ++i) /*Go over each image*/
 			for(int j = 0; j < nFeaturesPerImage[i]; j++) /*Go over each feature in image*/
 			{
 				/*Calculate the L2 distance between the feature and queryFeature*/
@@ -213,7 +213,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		BPQueueElement queueElem; /*A helper to retrieve elements from the priority queue*/
 
 		/*Go over all elements in the priority queue to retrieve image indices*/
-		for(int i = 0; i < queueSize; i++)
+		for(int i = 0; i < queueSize; ++i)
 		{
 			/*Get the element with the lowest value in the queue*/
 			spBPQueuePeek(priorityQueue, &queueElem);

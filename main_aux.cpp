@@ -72,7 +72,7 @@ void DestroyImageDataBase(ImageDatabase* database)
 		{
 			if (database->RGBHists[i] != NULL)
 			{
-				for(int j=0; j<NUM_OF_CHANNELS; j++)
+				for(int j=0; j<NUM_OF_CHANNELS; ++j)
 					if (database->RGBHists[i][j] != NULL)
 						spPointDestroy(database->RGBHists[i][j]);
 
@@ -91,7 +91,7 @@ void DestroyImageDataBase(ImageDatabase* database)
 		{
 			if (database->SIFTDescriptors[i] != NULL)
 			{
-				for(int j=0; j<database->nFeatures[i]; j++)
+				for(int j=0; j<database->nFeatures[i]; ++j)
 					if (database->SIFTDescriptors[i][j] != NULL)
 						spPointDestroy(database->SIFTDescriptors[i][j]);
 			}
@@ -294,11 +294,15 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 	if (closeDescriptorsCnt == NULL || imagesPriorityQueue == NULL)
 		resProgramState = PROGRAM_STATE_MEMORY_ERROR;
 
+
+	for(int i = 0; i < database->nImages; ++i)
+		closeDescriptorsCnt[i] = 0; /*Initialise all counters to avoid garbage data*/
+
 	if (resProgramState == PROGRAM_STATE_RUNNING)
 	{
 		for(int i=0; i < nQueryFeatures; ++i) /*Go over each feature of the query image*/
 		{
-			/*The list of the images with closest features to the i-th feature of the quert*/
+			/*The list of the images with closest features to the i-th feature of the query*/
 			int* closetImgIndices;
 			closetImgIndices = spBestSIFTL2SquaredDistance(
 									NUM_OF_CLOSET_IMAGES_TO_SIFT_FEATURE,
@@ -315,7 +319,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesBySIFTDescriptors(SPPoint** querySIFTDesc
 			}
 
 			/*Go over the indices of the closet images and add them to the total count*/
-			for(int j=0; j<NUM_OF_CLOSET_IMAGES_TO_SIFT_FEATURE;  j++)
+			for(int j=0; j<NUM_OF_CLOSET_IMAGES_TO_SIFT_FEATURE;  ++j)
 			{
 				int closetIndex = closetImgIndices[j];
 				closeDescriptorsCnt[closetIndex]++;

@@ -24,13 +24,13 @@ PROGRAM_STATE GetImageDatabaseFromUser(ImageDatabase* database)
 	/*Get the directory path for the images.*/
 	PrintMsg(ENTER_DIRECTORY_MSG);
 	if (scanf("%s", database->imgDirectory) <= 0) {
-	   return PROGRAM_STATE_MEMORY_ERROR; 
+	   return PROGRAM_STATE_MEMORY_ERROR;
 	};
 
 	/*Get the image prefix for the images. */
 	PrintMsg(ENTER_PREFIX_MSG);
 	if (scanf("%s", database->imgPrefix) <= 0) {
-	   return PROGRAM_STATE_MEMORY_ERROR; 
+	   return PROGRAM_STATE_MEMORY_ERROR;
 	};
 
 	/*Get the number of images*/
@@ -395,8 +395,8 @@ char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int img
 	if (res == NULL)
 		return NULL; /*Failed to allocate memory*/
 
-	/*A string representing the imgIndex*/
-	char imgIndexStr[MAX_DIGITS_IN_IMG_INDEX]; // [5]
+	/*A string representing the imgIndex. Can't have more digits than the max length of an image path*/
+	char imgIndexStr[MAX_IMG_PATH_LEGTH];
 	sprintf(imgIndexStr,"%d",imgIndex);
 
 	/*Construct the path of the image*/
@@ -404,7 +404,7 @@ char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int img
             free(res);
             return NULL;
         }
-        
+
 
 	return res;
 }

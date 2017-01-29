@@ -23,34 +23,47 @@ PROGRAM_STATE GetImageDatabaseFromUser(ImageDatabase* database)
 
 	/*Get the directory path for the images.*/
 	PrintMsg(ENTER_DIRECTORY_MSG);
-	scanf("%s", database->imgDirectory);
+	if (scanf("%s", database->imgDirectory) <= 0) {
+	   return PROGRAM_STATE_MEMORY_ERROR; 
+	};
 
 	/*Get the image prefix for the images. */
 	PrintMsg(ENTER_PREFIX_MSG);
-	scanf("%s", database->imgPrefix);
+	if (scanf("%s", database->imgPrefix) <= 0) {
+	   return PROGRAM_STATE_MEMORY_ERROR; 
+	};
 
 	/*Get the number of images*/
 
 	PrintMsg(ENTER_NUM_OF_IMAGES_MSG);
-	scanf("%d", &database->nImages);
+	if (scanf("%d", &database->nImages) <= 0) {
+            return PROGRAM_STATE_MEMORY_ERROR;
+        }
 
-	if (database->nImages < 1) /*Validate the inputed number of images*/
-		return PROGRAM_STATE_INVALID_N_IMAGES;
+	if (database->nImages < 1) { /*Validate the inputed number of images*/
+	    return PROGRAM_STATE_INVALID_N_IMAGES;
+        }
 
 	/*Get the image suffix for the images.*/
 	PrintMsg(ENTER_SUFFIX_MSG);
-	scanf("%s", database->imgSuffix);
+	if (scanf("%s", database->imgSuffix) <= 0) {
+            return PROGRAM_STATE_MEMORY_ERROR;
+        }
 
 	/*Get the number of bins*/
 	PrintMsg(ENTER_NUM_OF_BINS_MSG);
-	scanf("%d", &database->nBins);
+	if (scanf("%d", &database->nBins) <= 0) {
+            return PROGRAM_STATE_MEMORY_ERROR;
+        }
 
 	if (database->nBins < 1 || database->nBins > 255) /*Validate the inputed number of bins*/
 		return PROGRAM_STATE_INVALID_N_BINS;
 
 	/*Get the number of features to extract from each image*/
 	PrintMsg("Enter number of features:\n");
-	scanf("%d", &database->nFeaturesToExtract);
+	if (scanf("%d", &database->nFeaturesToExtract) <= 0) {
+            return PROGRAM_STATE_MEMORY_ERROR;
+        }
 
 	if (database->nFeaturesToExtract < 1) /*Validate the inputed number of features*/
 		return PROGRAM_STATE_INVALID_N_FEATURES;
@@ -165,7 +178,7 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 	bool hasQueryRGBHists = false; /*Set to true if the query's RGB hists were successfully retrieved*/
 	bool hasQuerySIFTDescriptors = false; /*Set to true if the query's SIFT descriptors were successfully retrieved*/
 
-	int* queryNFeatures = (int*)malloc(sizeof(*queryNFeatures) * 1); /*Num of retrieved features from  query image*/
+	int* queryNFeatures = (int*)malloc(sizeof(*queryNFeatures)); /*Num of retrieved features from  query image*/
 
 	/*Allocate memory for the image path for user input*/
 	char* queryImagePath = (char*)malloc(sizeof(*queryImagePath) * MAX_IMG_PATH_LEGTH);
@@ -178,7 +191,9 @@ PROGRAM_STATE CalcQueryImageClosestDatabaseResults(const ImageDatabase* database
 	{
 		/*Ask user to input terminating symbol "#" or the path to a query image*/
 		PrintMsg(ENTER_QUERY_OR_TERMINATE_MSG);
-		scanf("%s", queryImagePath);
+		if (scanf("%s", queryImagePath) <= 0) {
+                    resProgramState = PROGRAM_STATE_MEMORY_ERROR;
+                }
 
 		if (strcmp(queryImagePath, TERMINATING_SYMBOL) == 0) {
 			resProgramState = PROGRAM_STATE_EXIT; /*The user requested to terminate the program*/
@@ -258,7 +273,7 @@ PROGRAM_STATE CalcClosestDatabaseImagesByRGBHists(SPPoint** queryRGBHists, const
 			PrintMsg(NEAREST_IMAGES_GLOBAL_DESC_MSG);
 
 			int* nearestImgIndices = NULL;
-			int* numOfIndices = (int*)malloc(sizeof(*numOfIndices) * 1);
+			int* numOfIndices = (int*)malloc(sizeof(*numOfIndices));
 
 			if (numOfIndices == NULL)
 				resProgramState = PROGRAM_STATE_MEMORY_ERROR; /*Memory allocation error*/
@@ -381,15 +396,15 @@ char* GetImagePath(char* imgDirectory, char* imgPrefix, char* imgSuffix, int img
 		return NULL; /*Failed to allocate memory*/
 
 	/*A string representing the imgIndex*/
-	/*Assumes max int size of 32,767, which means at most 5 digits*/
-	char imgIndexStr[5];
+	char imgIndexStr[MAX_DIGITS_IN_IMG_INDEX]; // [5]
 	sprintf(imgIndexStr,"%d",imgIndex);
 
 	/*Construct the path of the image*/
-	strcpy(res, imgDirectory);
-	strcat(res, imgPrefix);
-	strcat(res, imgIndexStr);
-	strcat(res, imgSuffix);
+	if (strcpy(res, imgDirectory) == NULL || strcat(res, imgPrefix) == NULL || strcat(res, imgIndexStr) == NULL || strcat(res, imgSuffix) == NULL) {
+            free(res);
+            return NULL;
+        }
+        
 
 	return res;
 }

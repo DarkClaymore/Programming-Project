@@ -15,9 +15,9 @@ extern "C"{
 
 /* Error message in case we loaded an empty image */
 #define EMPTY_IMAGE_LOADED_ERROR "Image cannot be loaded"
-#define EMPTY_IMAGE_LOADED_ERROR_FORMAT "%s - %s:\n"
+#define EMPTY_IMAGE_LOADED_ERROR_FORMAT "%s - %s\n"
 
-/* Error code for exiting after an empty image is tried to be loaded*/
+/* Error code for */
 #define ERROR_CODE -1
 
 /*The proportion each channel contributes toward the total L2 distance calculated based on RGB hists*/
@@ -33,6 +33,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     /* Load image */
     src = imread(str, CV_LOAD_IMAGE_COLOR);
 
+    /* As instructed, print err msg and exit in case the image is empty */
     if (src.empty()) {
         printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
         exit(ERROR_CODE);
@@ -62,8 +63,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
     /* Compute the histograms, and store their data in a point */ 
     /* The output type of the matrices is CV_32F (float), we cast it to double */
     bool pointsCreateFailure = false;
-    double * histData = NULL;
-    histData = (double*)malloc(sizeof(*histData) * nBins);
+    double * histData = (double*)malloc(sizeof(*histData) * nBins);
     if (histData == NULL) {
         pointsCreateFailure = true;
     }
@@ -78,6 +78,8 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins) {
             pointsCreateFailure = true;
         }
     }
+
+    /* free memory */
     free(histData);
     if (pointsCreateFailure) {
         for (int i = 0; i < NUM_OF_CHANNELS; ++i) {
@@ -114,6 +116,8 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 
     /* Load img - gray scale mode! */
     src = cv::imread(str, CV_LOAD_IMAGE_GRAYSCALE);
+    
+    /* As instructed, print err msg and exit in case the image is empty */
     if (src.empty()) {
         printf(EMPTY_IMAGE_LOADED_ERROR_FORMAT,EMPTY_IMAGE_LOADED_ERROR, str);
         exit(ERROR_CODE);
@@ -150,8 +154,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 
     /* create an array of nFeatures points, each containing the corresponding descriptor */
     bool pointsCreateFailure = false;
-    double * featuresData = NULL;
-    featuresData = (double*)malloc(sizeof(*featuresData) * ds1.cols);
+    double * featuresData = (double*)malloc(sizeof(*featuresData) * ds1.cols);
     if (featuresData == NULL) {
        pointsCreateFailure = true;
     }
@@ -171,7 +174,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
             spPointDestroy(pointsArray[i]); 
         }
         free(pointsArray);
-        pointsArray = NULL;
+        return NULL;
     }
 
     return pointsArray;
@@ -188,6 +191,9 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 
 	/*Whether the procedure should keep running or encountered a memory allocation error and should exit*/
 	bool isKeepRunning = true;
+
+        /* For return value checking after queue operations*/
+        SP_BPQUEUE_MSG msg;
 
 	/*Allocate memory for storing the kClosest indices of images closest to queryFeature*/
 	int* closestImgIndices = (int*)malloc(kClosest*sizeof(*closestImgIndices));
@@ -207,7 +213,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 				double distance = spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature);
 
 				/*Enqueue the L2 distance to the priority queue, with the image's index*/
-				SP_BPQUEUE_MSG msg = spBPQueueEnqueue(priorityQueue, i, distance);
+				msg = spBPQueueEnqueue(priorityQueue, i, distance);
 
 				if (msg == SP_BPQUEUE_OUT_OF_MEMORY)
 				{
@@ -227,19 +233,32 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		for(int i = 0; i < queueSize; ++i)
 		{
 			/*Get the element with the lowest value in the queue*/
-			spBPQueuePeek(priorityQueue, &queueElem);
+			msg = spBPQueuePeek(priorityQueue, &queueElem);
+                        if (msg != SP_BPQUEUE_SUCCESS) {
+                           isKeepRunning = false;
+                           break;
+                        }
 
 			/*Add the index of the queue element to the output array*/
 			closestImgIndices[i] = queueElem.index;
 
 			/*Dequeue the lowest value element in preparation for the next iteration*/
-			spBPQueueDequeue(priorityQueue);
+			msg = spBPQueueDequeue(priorityQueue);
+                        if (msg != SP_BPQUEUE_SUCCESS) {
+                           isKeepRunning = false;
+                           break;
+                        }
 		}
 	}
-
 
 	/*Free all allocated memory for the queue*/
 	spBPQueueDestroy(priorityQueue);
 
+        /*Something bad happened. return NULL*/
+        if (isKeepRunning == false) {
+            free(closestImgIndices);
+            return NULL;
+           
+        }
 	return closestImgIndices;
 }

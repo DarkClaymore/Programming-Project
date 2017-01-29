@@ -28,6 +28,8 @@ extern const char* TERMINATING_SYMBOL;
 /*The number of channels that are expected on input (R,G,B)*/
 #define NUM_OF_CHANNELS 3
 
+/* The maximum number of digits in image indexex */
+#define MAX_DIGITS_IN_IMG_INDEX 5
 
 /*Input messages*/
 #define ENTER_DIRECTORY_MSG "Enter images directory path:\n"

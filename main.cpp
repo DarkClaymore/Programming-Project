@@ -7,7 +7,7 @@ int main()
 	/*Tracks the state of the program*/
 	PROGRAM_STATE programState = PROGRAM_STATE_RUNNING;
 
-	/*Initialise and allocate memory for the database of images*/
+	/*Initialise and allocate memory for the database of images, zeroing all members*/
 	ImageDatabase* database = (ImageDatabase*)calloc(sizeof(*database), 1);
 
 	if (database == NULL)
